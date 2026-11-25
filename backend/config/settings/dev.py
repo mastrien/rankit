@@ -1,0 +1,7 @@
+"""Local development Django settings."""
+
+import os
+
+from .base import *  # noqa: F403
+
+DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
