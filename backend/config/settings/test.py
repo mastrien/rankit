@@ -9,7 +9,7 @@ from .base import *  # noqa: F403
 DEBUG = False
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    os.getenv("DATABASE_URL", "postgresql://rankit:rankit_dev_password@localhost:5432/rankit"),
+    os.getenv("DATABASE_URL", "postgresql://rankit:rankit_dev_password@localhost:5433/rankit"),
 )
 DATABASES = {
     "default": dj_database_url.parse(TEST_DATABASE_URL, conn_max_age=0),

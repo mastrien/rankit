@@ -63,7 +63,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-DEFAULT_DATABASE_URL = "postgresql://rankit:rankit_dev_password@localhost:5432/rankit"
+DEFAULT_DATABASE_URL = "postgresql://rankit:rankit_dev_password@localhost:5433/rankit"
 DATABASES = {
     "default": dj_database_url.parse(
         os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL),

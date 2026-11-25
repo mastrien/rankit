@@ -26,6 +26,7 @@ coverage/
 playwright-report/
 test-results/
 blob-report/
+*.tsbuildinfo
 
 # Logs & OS
 *.log
