@@ -33,6 +33,7 @@ describe("ApiClient", () => {
     expect(fake.lastUrl).toBe("http://localhost:8000/api/v1/test/");
     expect(fake.lastInit?.credentials).toBe("include");
     expect(fake.lastInit?.method).toBe("POST");
+    expect(new Headers(fake.lastInit?.headers).get("X-Requested-With")).toBe("XMLHttpRequest");
   });
 
   it("handles 204 No Content on DELETE", async () => {

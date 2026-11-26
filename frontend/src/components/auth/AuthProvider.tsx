@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { ApiClient, ApiClientError } from "@/lib/api-client";
@@ -49,30 +50,40 @@ export function AuthProvider({
   const client = useMemo(() => apiClient ?? new ApiClient(), [apiClient]);
   const [user, setUser] = useState<AuthUser | null>(initialUser);
   const [isLoading, setIsLoading] = useState<boolean>(!skipInitialFetch && initialUser === null);
+  const sessionVersionRef = useRef(0);
+
+  const applyUserIfCurrent = useCallback((version: number, nextUser: AuthUser | null): boolean => {
+    if (version !== sessionVersionRef.current) {
+      return false;
+    }
+    setUser(nextUser);
+    return true;
+  }, []);
 
   const refreshUser = useCallback(async (): Promise<AuthUser | null> => {
+    const version = ++sessionVersionRef.current;
     try {
       const current = await fetchCurrentUser(client);
-      setUser(current);
+      applyUserIfCurrent(version, current);
       return current;
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 401) {
         try {
           await refreshSession(client);
           const retried = await fetchCurrentUser(client);
-          setUser(retried);
+          applyUserIfCurrent(version, retried);
           return retried;
         } catch {
-          setUser(null);
+          applyUserIfCurrent(version, null);
           return null;
         }
       }
-      setUser(null);
+      applyUserIfCurrent(version, null);
       return null;
     } finally {
       setIsLoading(false);
     }
-  }, [client]);
+  }, [applyUserIfCurrent, client]);
 
   useEffect(() => {
     if (skipInitialFetch || initialUser !== null) {
@@ -84,6 +95,7 @@ export function AuthProvider({
   const login = useCallback(
     async (payload: LoginPayload): Promise<AuthUser> => {
       const authenticated = await loginUser(payload, client);
+      sessionVersionRef.current += 1;
       setUser(authenticated);
       return authenticated;
     },
@@ -93,6 +105,7 @@ export function AuthProvider({
   const register = useCallback(
     async (payload: RegisterPayload): Promise<AuthUser> => {
       const created = await registerUser(payload, client);
+      sessionVersionRef.current += 1;
       setUser(created);
       return created;
     },
@@ -100,8 +113,14 @@ export function AuthProvider({
   );
 
   const logout = useCallback(async (): Promise<void> => {
-    await logoutUser(client);
-    setUser(null);
+    sessionVersionRef.current += 1;
+    try {
+      await logoutUser(client);
+    } catch {
+      // Always clear local session state even if the network/backend logout fails.
+    } finally {
+      setUser(null);
+    }
   }, [client]);
 
   const value = useMemo<AuthContextValue>(

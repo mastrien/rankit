@@ -16,10 +16,10 @@ const SAMPLE_USER = {
 };
 
 class SequenceAuthFetch {
-  private readonly handlers: readonly (() => Response)[];
+  private readonly handlers: readonly (() => Response | Promise<Response>)[];
   private index = 0;
 
-  constructor(handlers: readonly (() => Response)[]) {
+  constructor(handlers: readonly (() => Response | Promise<Response>)[]) {
     this.handlers = handlers;
   }
 
@@ -34,13 +34,19 @@ class SequenceAuthFetch {
 }
 
 function ProbeConsumer() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, login, logout } = useAuth();
   if (isLoading) {
     return <span>loading</span>;
   }
   return (
     <div>
       <span>{user ? user.username : "anon"}</span>
+      <button
+        onClick={() => void login({ username: "nathan", password: "StrongPassword!2026" })}
+        type="button"
+      >
+        do-login
+      </button>
       {user ? (
         <button onClick={() => void logout()} type="button">
           do-logout
@@ -53,9 +59,21 @@ function ProbeConsumer() {
 describe("AuthProvider", () => {
   it("recovers session via refresh endpoint when /me/ returns 401", async () => {
     const seq = new SequenceAuthFetch([
-      () => new Response(JSON.stringify({ detail: "expired" }), { status: 401, headers: { "Content-Type": "application/json" } }),
-      () => new Response(JSON.stringify({ detail: "ok" }), { status: 200, headers: { "Content-Type": "application/json" } }),
-      () => new Response(JSON.stringify(SAMPLE_USER), { status: 200, headers: { "Content-Type": "application/json" } }),
+      () =>
+        new Response(JSON.stringify({ detail: "expired" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }),
+      () =>
+        new Response(JSON.stringify({ detail: "ok" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      () =>
+        new Response(JSON.stringify(SAMPLE_USER), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
       () => new Response(null, { status: 204 }),
     ]);
     const client = new ApiClient("http://localhost:8000", seq.call);
@@ -74,8 +92,16 @@ describe("AuthProvider", () => {
 
   it("sets user to null when both /me/ and /refresh/ fail", async () => {
     const seq = new SequenceAuthFetch([
-      () => new Response(JSON.stringify({ detail: "unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } }),
-      () => new Response(JSON.stringify({ detail: "invalid refresh" }), { status: 401, headers: { "Content-Type": "application/json" } }),
+      () =>
+        new Response(JSON.stringify({ detail: "unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }),
+      () =>
+        new Response(JSON.stringify({ detail: "invalid refresh" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }),
     ]);
     const client = new ApiClient("http://localhost:8000", seq.call);
 
@@ -88,9 +114,92 @@ describe("AuthProvider", () => {
     await waitFor(() => expect(screen.getByText("anon")).toBeInTheDocument());
   });
 
+  it("ignores stale initial refreshUser result after login succeeds", async () => {
+    let resolveInitialMe!: (resp: Response) => void;
+    const initialMePromise = new Promise<Response>((resolve) => {
+      resolveInitialMe = resolve;
+    });
+
+    const call: FetchLike = async (input) => {
+      const url = String(input);
+      if (url.endsWith("/api/v1/auth/me/")) {
+        return initialMePromise;
+      }
+      if (url.endsWith("/api/v1/auth/login/")) {
+        return new Response(JSON.stringify(SAMPLE_USER), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ detail: "unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+
+    const client = new ApiClient("http://localhost:8000", call);
+
+    function RaceProbe() {
+      const { user, login } = useAuth();
+      return (
+        <div>
+          <span>{user ? user.username : "anon"}</span>
+          <button
+            onClick={() => void login({ username: "nathan", password: "StrongPassword!2026" })}
+            type="button"
+          >
+            race-login
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <AuthProvider apiClient={client}>
+        <RaceProbe />
+      </AuthProvider>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "race-login" }));
+    await waitFor(() => expect(screen.getByText("nathan")).toBeInTheDocument());
+
+    resolveInitialMe(
+      new Response(JSON.stringify({ detail: "expired" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByText("nathan")).toBeInTheDocument());
+  });
+
+  it("clears user locally even when logout endpoint fails", async () => {
+    const seq = new SequenceAuthFetch([
+      () =>
+        new Response(JSON.stringify({ detail: "server error" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }),
+    ]);
+    const client = new ApiClient("http://localhost:8000", seq.call);
+
+    render(
+      <AuthProvider apiClient={client} initialUser={SAMPLE_USER} skipInitialFetch>
+        <ProbeConsumer />
+      </AuthProvider>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "do-logout" }));
+    await waitFor(() => expect(screen.getByText("anon")).toBeInTheDocument());
+  });
+
   it("sets user to null on non-401 error and throws when useAuth is used outside provider", async () => {
     const seq = new SequenceAuthFetch([
-      () => new Response(JSON.stringify({ detail: "server error" }), { status: 500, headers: { "Content-Type": "application/json" } }),
+      () =>
+        new Response(JSON.stringify({ detail: "server error" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }),
     ]);
     const client = new ApiClient("http://localhost:8000", seq.call);
 
