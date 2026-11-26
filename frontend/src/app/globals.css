@@ -58,7 +58,11 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family:
+    var(--font-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 @theme inline {
@@ -85,7 +89,10 @@ body {
   --color-btn-drop: var(--btn-drop, rgb(0 0 0 / 0.4));
   --color-btn-sheen: var(--btn-sheen, rgb(255 255 255 / 0.2));
   --color-destructive-edge: var(--destructive-edge, #f61418);
-  --color-destructive-hover: var(--destructive-hover, color-mix(in oklab, var(--color-destructive) 85%, black));
+  --color-destructive-hover: var(
+    --destructive-hover,
+    color-mix(in oklab, var(--color-destructive) 85%, black)
+  );
   --color-destructive-top: var(--destructive-top, #fd4b4e);
   --color-on-brand: var(--on-brand, #fff);
   --color-amber: var(--amber);
@@ -175,61 +182,68 @@ body {
 }
 
 @utility overlay-surface {
-    --accent: var(--overlay-raised);
-    --accent-foreground: oklch(0.99 0 0);
-    --amber-ink: oklch(0.86 0.14 80);
-    --background: var(--overlay-raised);
-    --blue-ink: oklch(0.8 0.11 256);
-    --border: oklch(1 0 0 / 0.1);
-    --brand-ink: oklch(0.82 0.13 352.53);
-    --card: var(--overlay-raised);
-    --card-foreground: var(--overlay-fg);
-    --color-accent: var(--accent);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-amber-ink: var(--amber-ink);
-    --color-background: var(--background);
-    --color-blue-ink: var(--blue-ink);
-    --color-border: var(--border);
-    --color-brand-ink: var(--brand-ink);
-    --color-card: var(--card);
-    --color-card-foreground: var(--card-foreground);
-    --color-destructive-fg: var(--destructive-fg);
-    --color-destructive-ink: var(--destructive-ink);
-    --color-foreground: var(--foreground);
-    --color-green-ink: var(--green-ink);
-    --color-input: var(--input);
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-popover: var(--popover);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-ring: var(--ring);
-    --color-secondary: var(--secondary);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --destructive: oklch(0.8 0.13 22);
-    --destructive-fg: oklch(0.2 0 0);
-    --destructive-ink: var(--destructive);
-    --foreground: var(--overlay-fg);
-    --green-ink: oklch(0.82 0.15 152);
-    --input: oklch(1 0 0 / 0.16);
-    --muted: var(--overlay-raised);
-    --muted-foreground: oklch(0.82 0 0);
-    --overlay: oklch(0.4 0 0);
-    --overlay-fg: oklch(0.97 0 0);
-    --overlay-raised: oklch(0.47 0 0);
-    --popover: var(--overlay);
-    --popover-foreground: var(--overlay-fg);
-    --ring: oklch(0.82 0 0);
-    --secondary: var(--overlay-raised);
-    --secondary-foreground: oklch(0.92 0 0);
+  --accent: var(--overlay-raised);
+  --accent-foreground: oklch(0.99 0 0);
+  --amber-ink: oklch(0.86 0.14 80);
+  --background: var(--overlay-raised);
+  --blue-ink: oklch(0.8 0.11 256);
+  --border: oklch(1 0 0 / 0.1);
+  --brand-ink: oklch(0.82 0.13 352.53);
+  --card: var(--overlay-raised);
+  --card-foreground: var(--overlay-fg);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-amber-ink: var(--amber-ink);
+  --color-background: var(--background);
+  --color-blue-ink: var(--blue-ink);
+  --color-border: var(--border);
+  --color-brand-ink: var(--brand-ink);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-destructive-fg: var(--destructive-fg);
+  --color-destructive-ink: var(--destructive-ink);
+  --color-foreground: var(--foreground);
+  --color-green-ink: var(--green-ink);
+  --color-input: var(--input);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-ring: var(--ring);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --destructive: oklch(0.8 0.13 22);
+  --destructive-fg: oklch(0.2 0 0);
+  --destructive-ink: var(--destructive);
+  --foreground: var(--overlay-fg);
+  --green-ink: oklch(0.82 0.15 152);
+  --input: oklch(1 0 0 / 0.16);
+  --muted: var(--overlay-raised);
+  --muted-foreground: oklch(0.82 0 0);
+  --overlay: oklch(0.4 0 0);
+  --overlay-fg: oklch(0.97 0 0);
+  --overlay-raised: oklch(0.47 0 0);
+  --popover: var(--overlay);
+  --popover-foreground: var(--overlay-fg);
+  --ring: oklch(0.82 0 0);
+  --secondary: var(--overlay-raised);
+  --secondary-foreground: oklch(0.92 0 0);
   @variant dark {
     --overlay: oklch(0.29 0 0);
     --overlay-raised: oklch(0.36 0 0);
-    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.08), 0 0 0 1px oklch(0 0 0 / 0.5), 0 16px 32px -8px oklch(0 0 0 / 0.6);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.08),
+      0 0 0 1px oklch(0 0 0 / 0.5),
+      0 16px 32px -8px oklch(0 0 0 / 0.6);
   }
-    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.08), 0 0 0 1px oklch(0 0 0 / 0.18), 0 4px 8px -4px oklch(0 0 0 / 0.2), 0 16px 32px -8px oklch(0 0 0 / 0.32);
-    color-scheme: dark;
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.08),
+    0 0 0 1px oklch(0 0 0 / 0.18),
+    0 4px 8px -4px oklch(0 0 0 / 0.2),
+    0 16px 32px -8px oklch(0 0 0 / 0.32);
+  color-scheme: dark;
 }
 
 @utility state-transition {
-    @apply transition-[background-color,border-color,color,box-shadow] duration-150 ease-out motion-reduce:transition-none;
+  @apply transition-[background-color,border-color,color,box-shadow] duration-150 ease-out motion-reduce:transition-none;
 }

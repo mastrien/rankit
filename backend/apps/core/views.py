@@ -1,7 +1,5 @@
 """Core HTTP views for Rankit API."""
 
-from dataclasses import asdict
-
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -15,21 +13,14 @@ class HealthCheckView(APIView):
 
     authentication_classes = ()
     permission_classes = ()
+    health_service: DatabaseHealthService | None = None
 
     def get(self, request: Request) -> Response:
         """Return 200 OK when PostgreSQL responds or 503 when degraded."""
-        report = DatabaseHealthService().check()
+        service = self.health_service or DatabaseHealthService()
+        report = service.check()
         http_status = (
             status.HTTP_200_OK if report.is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
         )
         payload = {"status": report.status, "database": report.database}
         return Response(payload, status=http_status)
-
-
-def health_report_to_dict(service: DatabaseHealthService) -> dict[str, object]:
-    """Serialize a health check report for diagnostic callers.
-
-    Example:
-        payload = health_report_to_dict(DatabaseHealthService())
-    """
-    return asdict(service.check())
