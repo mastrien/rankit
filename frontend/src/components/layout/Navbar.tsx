@@ -31,6 +31,12 @@ export function Navbar() {
           >
             Início
           </Link>
+          <Link
+            className="rounded-md px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:text-white"
+            href="/search"
+          >
+            Explorar
+          </Link>
 
           {!isLoading && user ? (
             <>

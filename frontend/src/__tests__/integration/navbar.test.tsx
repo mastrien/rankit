@@ -24,6 +24,7 @@ describe("Navigation layout components", () => {
 
     expect(screen.getByRole("img", { name: "Rankit" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Início" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Explorar" })).toHaveAttribute("href", "/search");
     expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login");
     expect(screen.getByRole("link", { name: "Cadastro" })).toHaveAttribute("href", "/register");
   });
