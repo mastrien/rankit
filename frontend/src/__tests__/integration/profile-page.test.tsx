@@ -141,9 +141,7 @@ describe("ProfilePage", () => {
     );
 
     await userEvent.click(screen.getByRole("button", { name: "Seguindo" }));
-    await waitFor(() =>
-      expect(screen.getAllByRole("button", { name: "Seguir" }).length).toBe(2),
-    );
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Seguir" }).length).toBe(2));
 
     await userEvent.click(screen.getAllByRole("button", { name: "Seguir" })[1]!);
     await waitFor(() => expect(screen.queryByText("Carol")).not.toBeInTheDocument());
@@ -172,5 +170,73 @@ describe("ProfilePage", () => {
 
     const pageElement = await ProfilePage({ params: Promise.resolve({ username: "alice" }) });
     expect(pageElement).toBeTruthy();
+  });
+
+  it("degrades suggestions cleanly on 500, shows inline action alerts, and closes modal on Escape", async () => {
+    const baseFake = new FakeProfileRouterFetch();
+    let failSuggestions = true;
+    let failFollow = false;
+    let failFollowersList = false;
+
+    const client = new ApiClient("http://localhost:8000", async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (url.endsWith("/suggestions/") && failSuggestions) {
+        return new Response(null, { status: 500 });
+      }
+      if (url.endsWith("/follow/") && method === "POST" && failFollow) {
+        return new Response(null, { status: 500 });
+      }
+      if (url.endsWith("/followers/") && failFollowersList) {
+        return new Response(null, { status: 500 });
+      }
+      return baseFake.call(input, init);
+    });
+    const { ProfileView } = await import("@/components/profile/ProfileView");
+
+    const { rerender } = render(
+      <AuthProvider apiClient={client} initialUser={VIEWER_ALICE} skipInitialFetch>
+        <ProfileView apiClient={client} username="bob" />
+      </AuthProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Bob" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    failSuggestions = false;
+    failFollow = true;
+    rerender(
+      <AuthProvider apiClient={client} initialUser={VIEWER_ALICE} skipInitialFetch>
+        <ProfileView apiClient={client} username="bob" />
+      </AuthProvider>,
+    );
+    await userEvent.click(screen.getAllByRole("button", { name: "Seguir" })[0]!);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível atualizar o status de seguidor.",
+    );
+
+    const suggestButtons = screen.getAllByRole("button", { name: "Seguir" });
+    if (suggestButtons[1]) {
+      await userEvent.click(suggestButtons[1]);
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Não foi possível seguir a sugestão selecionada.",
+      );
+    }
+
+    failFollowersList = true;
+    await userEvent.click(screen.getByRole("button", { name: /Seguidores/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar a lista de conexões.",
+    );
+
+    failFollowersList = false;
+    await userEvent.click(screen.getByRole("button", { name: /Seguidores/i }));
+    const dialog = await screen.findByRole("dialog");
+    const labelledBy = dialog.getAttribute("aria-labelledby");
+    expect(labelledBy).toBeTruthy();
+    expect(document.getElementById(labelledBy!)?.textContent).toBe("Seguidores");
+
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 });

@@ -60,7 +60,9 @@ export function ProfileHeader({
             onClick={onOpenFollowers}
             type="button"
           >
-            <span className="block text-lg font-semibold text-white">{profile.followers_count}</span>
+            <span className="block text-lg font-semibold text-white">
+              {profile.followers_count}
+            </span>
             <span className="text-xs text-zinc-400">Seguidores</span>
           </button>
 
@@ -69,7 +71,9 @@ export function ProfileHeader({
             onClick={onOpenFollowing}
             type="button"
           >
-            <span className="block text-lg font-semibold text-white">{profile.following_count}</span>
+            <span className="block text-lg font-semibold text-white">
+              {profile.following_count}
+            </span>
             <span className="text-xs text-zinc-400">Seguindo</span>
           </button>
 

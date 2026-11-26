@@ -6,22 +6,7 @@ import { type FormEvent, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import SmoothButton from "@/components/smoothui/smooth-button";
 import { ApiClientError } from "@/lib/api-client";
-
-function formatSerializerErrors(details: unknown, fallback: string): string {
-  if (!details || typeof details !== "object") {
-    return fallback;
-  }
-  const record = details as Record<string, unknown>;
-  for (const value of Object.values(record)) {
-    if (Array.isArray(value) && typeof value[0] === "string") {
-      return value[0];
-    }
-    if (typeof value === "string") {
-      return value;
-    }
-  }
-  return fallback;
-}
+import { formatSerializerErrors } from "@/lib/error-formatting";
 
 /** Registration form creating a Rankit account and starting an HttpOnly cookie session. */
 export function RegisterForm() {

@@ -100,7 +100,9 @@ describe("profile-api", () => {
     );
 
     await expect(fetchProfile("alice", badClient)).rejects.toThrow(/Invalid ProfileDetail payload/);
-    await expect(fetchProfile("alice", nullClient)).rejects.toThrow(/Invalid ProfileDetail payload/);
+    await expect(fetchProfile("alice", nullClient)).rejects.toThrow(
+      /Invalid ProfileDetail payload/,
+    );
     await expect(fetchProfilePresets(badClient)).rejects.toThrow(/Invalid ProfilePresets payload/);
     await expect(fetchProfilePresets(nullClient)).rejects.toThrow(/Invalid ProfilePresets payload/);
     await expect(fetchFollowers("alice", badClient)).rejects.toThrow(

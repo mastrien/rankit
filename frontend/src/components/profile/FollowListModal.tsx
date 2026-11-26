@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useId } from "react";
 import SmoothButton from "@/components/smoothui/smooth-button";
 import type { UserSummary } from "@/lib/profile-api";
 
@@ -14,19 +15,37 @@ export interface FollowListModalProps {
 
 /** Accessible modal displaying follower or following user summaries. */
 export function FollowListModal({ title, isOpen, users, onClose }: FollowListModalProps) {
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) {
     return null;
   }
 
   return (
     <div
+      aria-labelledby={titleId}
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
       role="dialog"
     >
       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
         <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
+          <h2 className="text-lg font-semibold text-white" id={titleId}>
+            {title}
+          </h2>
           <SmoothButton onClick={onClose} size="sm" variant="ghost">
             Fechar
           </SmoothButton>

@@ -15,9 +15,14 @@ vi.mock("next/navigation", () => ({
 class FakeEditProfileFetch {
   public lastPatchBody: Record<string, unknown> | null = null;
   private readonly patchStatus: number;
+  private readonly errorPayload: Record<string, unknown>;
 
-  constructor(patchStatus = 200) {
+  constructor(
+    patchStatus = 200,
+    errorPayload: Record<string, unknown> = { detail: "Erro ao salvar perfil." },
+  ) {
     this.patchStatus = patchStatus;
+    this.errorPayload = errorPayload;
   }
 
   public call: FetchLike = async (input, init) => {
@@ -48,7 +53,7 @@ class FakeEditProfileFetch {
     if (url.endsWith("/api/v1/profiles/me/") && method === "PATCH") {
       this.lastPatchBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
       if (this.patchStatus !== 200) {
-        return new Response(JSON.stringify({ detail: "Erro ao salvar perfil." }), {
+        return new Response(JSON.stringify(this.errorPayload), {
           status: this.patchStatus,
           headers: { "Content-Type": "application/json" },
         });
@@ -139,5 +144,23 @@ describe("EditProfilePage", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Erro ao salvar perfil.");
+  });
+
+  it("formats DRF serializer field errors on edit profile rejection", async () => {
+    const fake = new FakeEditProfileFetch(400, {
+      bio: ["A biografia excedeu o limite permitido."],
+    });
+    const client = new ApiClient("http://localhost:8000", fake.call);
+
+    render(
+      <AuthProvider apiClient={client} initialUser={SAMPLE_USER} skipInitialFetch>
+        <EditProfileForm apiClient={client} />
+      </AuthProvider>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "A biografia excedeu o limite permitido.",
+    );
   });
 });

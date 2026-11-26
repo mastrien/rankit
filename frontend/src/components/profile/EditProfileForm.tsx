@@ -7,11 +7,8 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import SmoothButton from "@/components/smoothui/smooth-button";
 import { ApiClient, ApiClientError } from "@/lib/api-client";
-import {
-  fetchProfilePresets,
-  type ProfilePresets,
-  updateOwnProfile,
-} from "@/lib/profile-api";
+import { formatSerializerErrors } from "@/lib/error-formatting";
+import { fetchProfilePresets, type ProfilePresets, updateOwnProfile } from "@/lib/profile-api";
 
 export interface EditProfileFormProps {
   readonly apiClient?: ApiClient;
@@ -61,9 +58,7 @@ export function EditProfileForm({ apiClient }: EditProfileFormProps) {
   }, [client]);
 
   if (isAuthLoading) {
-    return (
-      <div className="mx-auto max-w-4xl px-4 py-12 text-sm text-zinc-400">Carregando...</div>
-    );
+    return <div className="mx-auto max-w-4xl px-4 py-12 text-sm text-zinc-400">Carregando...</div>;
   }
 
   if (!user) {
@@ -90,7 +85,7 @@ export function EditProfileForm({ apiClient }: EditProfileFormProps) {
       router.push(`/profile/${updated.username}`);
     } catch (error) {
       if (error instanceof ApiClientError) {
-        setErrorMessage(error.message);
+        setErrorMessage(formatSerializerErrors(error.details, error.message));
       } else {
         setErrorMessage("Erro ao atualizar perfil.");
       }
@@ -224,7 +219,10 @@ export function EditProfileForm({ apiClient }: EditProfileFormProps) {
       </fieldset>
 
       {errorMessage ? (
-        <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300" role="alert">
+        <p
+          className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          role="alert"
+        >
           {errorMessage}
         </p>
       ) : null}
