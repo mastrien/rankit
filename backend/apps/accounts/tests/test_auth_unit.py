@@ -15,7 +15,7 @@ from apps.accounts.cookies import AuthCookieService, JwtCookieSettings, _lifetim
 from apps.accounts.models import RankitUser
 from apps.accounts.security import enforce_cookie_csrf_protection
 from apps.accounts.serializers import LoginSerializer, RegisterSerializer
-from apps.accounts.views import CurrentUserView
+from apps.accounts.views import CurrentUserView, LogoutView
 
 
 class FakeAvailableUserChecker:
@@ -218,6 +218,19 @@ def test_login_serializer_lowercases_username_and_rejects_blank() -> None:
 def test_current_user_view_returns_401_for_anonymous_user() -> None:
     response = CurrentUserView().get(SimpleNamespace(user=AnonymousUser()))  # type: ignore[arg-type]
     assert response.status_code == 401
+
+
+@pytest.mark.unit
+def test_logout_view_clears_cookies_even_without_refresh_cookie() -> None:
+    request = SimpleNamespace(
+        method="POST",
+        headers={"Origin": "http://localhost:3000", "X-Requested-With": "XMLHttpRequest"},
+        COOKIES={},
+    )
+    response = LogoutView().post(request)  # type: ignore[arg-type]
+    assert response.status_code == 204
+    assert response.cookies["rankit_access"].value == ""
+    assert response.cookies["rankit_refresh"].value == ""
 
 
 @pytest.mark.unit
