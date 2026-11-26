@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "apps.core",
     "apps.accounts",
+    "apps.profiles",
 ]
 
 MIDDLEWARE = [
