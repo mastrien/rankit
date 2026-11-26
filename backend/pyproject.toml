@@ -1,0 +1,70 @@
+[project]
+name = "rankit-backend"
+version = "0.1.0"
+description = "Rankit Django REST API backend"
+requires-python = ">=3.13"
+dependencies = [
+    "dj-database-url>=2.3.0",
+    "django>=5.2,<6.0",
+    "django-cors-headers>=4.7.0",
+    "djangorestframework>=3.16.0",
+    "djangorestframework-simplejwt>=5.5.0",
+    "gunicorn>=23.0.0",
+    "psycopg[binary]>=3.2.0",
+    "python-dotenv>=1.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5.2.0",
+    "djangorestframework-stubs>=3.16.0",
+    "mypy>=1.15.0",
+    "pytest>=8.3.0",
+    "pytest-cov>=6.1.0",
+    "pytest-django>=4.11.0",
+    "ruff>=0.11.0",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+strict = true
+ignore_missing_imports = false
+exclude = ["migrations"]
+
+[[tool.mypy.overrides]]
+module = ["*.migrations.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["dj_database_url"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+markers = [
+    "unit: fast isolated unit tests without database or network I/O",
+    "integration: integration tests against PostgreSQL and Django request pipeline",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["apps"]
+omit = ["*/migrations/*", "*/tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_empty = true
