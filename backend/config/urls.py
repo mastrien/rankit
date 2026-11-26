@@ -8,4 +8,5 @@ urlpatterns = [
     path("api/v1/", include("apps.core.urls")),
     path("api/v1/auth/", include("apps.accounts.urls")),
     path("api/v1/profiles/", include("apps.profiles.urls")),
+    path("api/v1/media/", include("apps.media.urls")),
 ]
