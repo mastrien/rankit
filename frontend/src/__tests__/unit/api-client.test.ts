@@ -33,6 +33,7 @@ describe("ApiClient", () => {
     expect(fake.lastUrl).toBe("http://localhost:8000/api/v1/test/");
     expect(fake.lastInit?.credentials).toBe("include");
     expect(fake.lastInit?.method).toBe("POST");
+    expect(new Headers(fake.lastInit?.headers).get("X-Requested-With")).toBe("XMLHttpRequest");
   });
 
   it("handles 204 No Content on DELETE", async () => {
@@ -85,6 +86,18 @@ describe("ApiClient", () => {
       message:
         "Request to http://localhost:8000/api/v1/health/ failed with HTTP status 500 (expected 2xx JSON response).",
     });
+  });
+
+  it("uses globalThis.fetch when no custom fetcher is injected", async () => {
+    const fake = new FakeJsonFetch(200, { status: "ok" });
+    vi.stubGlobal("fetch", fake.call);
+    try {
+      const client = new ApiClient("http://localhost:8000");
+      const result = await client.get<{ status: string }>("/api/v1/health/");
+      expect(result).toEqual({ status: "ok" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("resolves API base URL in browser and server environments", () => {

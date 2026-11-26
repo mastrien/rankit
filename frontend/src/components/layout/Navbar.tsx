@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/components/auth/AuthProvider";
 import SmoothButton from "@/components/smoothui/smooth-button";
 
-/** Top navigation bar shared across Rankit pages. */
+/** Top navigation bar shared across Rankit pages, adapting to auth state. */
 export function Navbar() {
+  const { user, isLoading, logout } = useAuth();
+
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
@@ -28,12 +31,26 @@ export function Navbar() {
           >
             Início
           </Link>
-          <SmoothButton asChild size="sm" variant="ghost">
-            <Link href="/login">Entrar</Link>
-          </SmoothButton>
-          <SmoothButton asChild color="accent" size="sm" variant="candy">
-            <Link href="/register">Cadastro</Link>
-          </SmoothButton>
+
+          {!isLoading && user ? (
+            <>
+              <SmoothButton asChild size="sm" variant="ghost">
+                <Link href={`/profile/${user.username}`}>{user.display_name}</Link>
+              </SmoothButton>
+              <SmoothButton onClick={() => void logout()} size="sm" variant="outline">
+                Sair
+              </SmoothButton>
+            </>
+          ) : (
+            <>
+              <SmoothButton asChild size="sm" variant="ghost">
+                <Link href="/login">Entrar</Link>
+              </SmoothButton>
+              <SmoothButton asChild color="accent" size="sm" variant="candy">
+                <Link href="/register">Cadastro</Link>
+              </SmoothButton>
+            </>
+          )}
         </nav>
       </div>
     </header>
