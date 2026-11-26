@@ -4,11 +4,13 @@ import re
 from typing import Any, Protocol
 
 from django.contrib.auth.password_validation import validate_password
+from django.db import IntegrityError, transaction
 from rest_framework import serializers
 
 from .models import RankitUser
 
 USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]{3,30}$")
+RESERVED_USERNAMES = frozenset({"me", "presets", "edit", "login", "register", "admin", "api"})
 
 
 class UserUniquenessChecker(Protocol):
@@ -70,12 +72,14 @@ class RegisterSerializer(serializers.Serializer[RankitUser]):
         self._uniqueness_checker = uniqueness_checker or OrmUserUniquenessChecker()
 
     def validate_username(self, value: str) -> str:
-        """Enforce Rankit username format and uniqueness."""
+        """Enforce Rankit username format, reserved list, and uniqueness."""
         cleaned = value.lower()
         if not USERNAME_PATTERN.match(cleaned):
             raise serializers.ValidationError(
                 f"Username inválido: {value!r} (esperado 3-30 caracteres [a-zA-Z0-9_.-])."
             )
+        if cleaned in RESERVED_USERNAMES:
+            raise serializers.ValidationError(f"O nome de usuário {cleaned!r} é reservado.")
         if self._uniqueness_checker.username_exists(cleaned):
             raise serializers.ValidationError("Já existe um usuário com este nome de usuário.")
         return cleaned
@@ -91,17 +95,28 @@ class RegisterSerializer(serializers.Serializer[RankitUser]):
         """Verify matching passwords and run Django password strength validators."""
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError({"password_confirm": "As senhas não coincidem."})
-        validate_password(attrs["password"])
+        candidate = RankitUser(
+            username=attrs["username"],
+            email=attrs["email"],
+            display_name=attrs["display_name"],
+        )
+        validate_password(attrs["password"], user=candidate)
         return attrs
 
     def create(self, validated_data: dict[str, Any]) -> RankitUser:
         """Persist a new RankitUser with Django's password hashing."""
-        return RankitUser.objects.create_user(
-            username=validated_data["username"],
-            email=validated_data["email"],
-            password=validated_data["password"],
-            display_name=validated_data["display_name"],
-        )
+        try:
+            with transaction.atomic():
+                return RankitUser.objects.create_user(
+                    username=validated_data["username"],
+                    email=validated_data["email"],
+                    password=validated_data["password"],
+                    display_name=validated_data["display_name"],
+                )
+        except IntegrityError as exc:
+            raise serializers.ValidationError(
+                {"username": "Já existe um usuário com este nome de usuário ou e-mail."}
+            ) from exc
 
 
 class LoginSerializer(serializers.Serializer[dict[str, Any]]):

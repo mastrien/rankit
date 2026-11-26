@@ -49,6 +49,17 @@ class AuthCookieService:
     def __init__(self, cookie_settings: JwtCookieSettings | None = None) -> None:
         self._settings = cookie_settings or default_cookie_settings()
 
+    def _set_cookie(self, response: Response, key: str, value: str, max_age: int) -> None:
+        response.set_cookie(
+            key=key,
+            value=value,
+            httponly=True,
+            secure=self._settings.secure,
+            samesite="Lax",
+            max_age=max_age,
+            path="/",
+        )
+
     def attach_for_user(self, response: Response, user: RankitUser) -> None:
         """Issue access + refresh tokens for user and write them as HttpOnly cookies."""
         refresh = RefreshToken.for_user(user)
@@ -61,24 +72,18 @@ class AuthCookieService:
         refresh_token: str | None = None,
     ) -> None:
         """Write access (and optional refresh) JWT cookies with HttpOnly + SameSite=Lax."""
-        response.set_cookie(
-            key=self._settings.access_name,
-            value=access_token,
-            httponly=True,
-            secure=self._settings.secure,
-            samesite="Lax",
-            max_age=self._settings.access_max_age_seconds,
-            path="/",
+        self._set_cookie(
+            response,
+            self._settings.access_name,
+            access_token,
+            self._settings.access_max_age_seconds,
         )
         if refresh_token is not None:
-            response.set_cookie(
-                key=self._settings.refresh_name,
-                value=refresh_token,
-                httponly=True,
-                secure=self._settings.secure,
-                samesite="Lax",
-                max_age=self._settings.refresh_max_age_seconds,
-                path="/",
+            self._set_cookie(
+                response,
+                self._settings.refresh_name,
+                refresh_token,
+                self._settings.refresh_max_age_seconds,
             )
 
     def clear_tokens(self, response: Response) -> None:

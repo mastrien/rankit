@@ -3,9 +3,13 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from rest_framework.authentication import BaseAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.request import Request
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import Token
+
+from .security import enforce_cookie_csrf_protection
 
 
 class CookieJWTAuthentication(BaseAuthentication):
@@ -35,8 +39,14 @@ class CookieJWTAuthentication(BaseAuthentication):
         if not cookie_token:
             return None
 
-        validated_token = self._jwt.get_validated_token(cookie_token.encode("utf-8"))
-        return self._jwt.get_user(validated_token), validated_token
+        try:
+            validated_token = self._jwt.get_validated_token(cookie_token.encode("utf-8"))
+            user = self._jwt.get_user(validated_token)
+        except (TokenError, AuthenticationFailed):
+            return None
+
+        enforce_cookie_csrf_protection(request)
+        return user, validated_token
 
     def authenticate_header(self, request: Request) -> str:
         """Return WWW-Authenticate challenge header delegated to JWTAuthentication."""
