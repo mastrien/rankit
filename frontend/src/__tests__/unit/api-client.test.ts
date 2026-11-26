@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { ApiClient, ApiClientError, type FetchLike } from "@/lib/api-client";
+import { describe, expect, it, vi } from "vitest";
+import { ApiClient, ApiClientError, resolveApiBaseUrl, type FetchLike } from "@/lib/api-client";
 
 class FakeJsonFetch {
   public lastUrl = "";
@@ -66,6 +66,16 @@ describe("ApiClient", () => {
     });
   });
 
+  it("uses message field when detail is absent", async () => {
+    const fake = new FakeJsonFetch(422, { message: "Payload inválido." });
+    const client = new ApiClient("http://localhost:8000", fake.call);
+
+    await expect(client.get("/api/v1/health/")).rejects.toMatchObject({
+      status: 422,
+      message: "Payload inválido.",
+    });
+  });
+
   it("falls back to descriptive HTTP error when payload has no detail", async () => {
     const fake = new FakeJsonFetch(500, { error: "boom" });
     const client = new ApiClient("http://localhost:8000", fake.call);
@@ -75,5 +85,19 @@ describe("ApiClient", () => {
       message:
         "Request to http://localhost:8000/api/v1/health/ failed with HTTP status 500 (expected 2xx JSON response).",
     });
+  });
+
+  it("resolves API base URL in browser and server environments", () => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "https://api.rankit.example");
+    expect(resolveApiBaseUrl()).toBe("https://api.rankit.example");
+
+    vi.stubGlobal("window", undefined);
+    vi.stubEnv("INTERNAL_API_URL", "http://backend:8000");
+    try {
+      expect(resolveApiBaseUrl()).toBe("http://backend:8000");
+    } finally {
+      vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
+    }
   });
 });
