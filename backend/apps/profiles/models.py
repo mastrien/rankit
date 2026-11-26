@@ -36,7 +36,7 @@ class UserFollow(TimestampedModel):
                 name="prevent_self_follow",
             ),
         )
-        ordering = ("-created_at",)
+        ordering = ("-created_at", "-id")
 
     def __str__(self) -> str:
         return f"@{self.follower.username} -> @{self.following.username}"

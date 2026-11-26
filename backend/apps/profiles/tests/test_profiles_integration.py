@@ -55,6 +55,18 @@ def test_profile_presets_detail_and_customization_flow() -> None:
     assert payload["banner_id"] == 4
     assert payload["is_self"] is True
 
+    partial_patch = client.patch(
+        "/api/v1/profiles/me/",
+        {"bio": "Apenas bio atualizada."},
+        format="json",
+    )
+    assert partial_patch.status_code == 200
+    partial_payload = partial_patch.json()
+    assert partial_payload["bio"] == "Apenas bio atualizada."
+    assert partial_payload["display_name"] == "Alice Rankit"
+    assert partial_payload["icon_id"] == 12
+    assert partial_payload["banner_id"] == 4
+
 
 @pytest.mark.integration
 @pytest.mark.django_db
@@ -99,6 +111,18 @@ def test_follow_unfollow_lists_and_2hop_suggestions() -> None:
     suggestions = client.get("/api/v1/profiles/bob_g/suggestions/")
     assert suggestions.status_code == 200
     assert [item["username"] for item in suggestions.json()] == ["carol_g", "dave_g"]
+
+    limited_suggestions = client.get("/api/v1/profiles/bob_g/suggestions/?limit=1")
+    assert limited_suggestions.status_code == 200
+    assert [item["username"] for item in limited_suggestions.json()] == ["carol_g"]
+
+    paged_followers = client.get("/api/v1/profiles/bob_g/followers/?limit=1&offset=1")
+    assert paged_followers.status_code == 200
+    assert len(paged_followers.json()) == 1
+
+    assert client.get("/api/v1/profiles/bob_g/followers/?limit=0").status_code == 400
+    assert client.get("/api/v1/profiles/bob_g/following/?offset=-1").status_code == 400
+    assert client.get("/api/v1/profiles/bob_g/suggestions/?limit=abc").status_code == 400
 
     assert client.get("/api/v1/profiles/nobody_x/followers/").status_code == 404
     assert client.get("/api/v1/profiles/nobody_x/following/").status_code == 404

@@ -103,11 +103,11 @@ class OrmFollowGraphRepository:
         return [_user_to_summary(rel.follower) for rel in relations]
 
     def following_usernames(self, username: str) -> set[str]:
-        """Return the set of usernames that username currently follows."""
+        """Return the set of lowercased usernames that username currently follows."""
         qs = UserFollow.objects.filter(follower__username__iexact=username).values_list(
             "following__username", flat=True
         )
-        return set(qs)
+        return {item.strip().lower() for item in qs}
 
 
 class FollowSuggestionService:
@@ -123,11 +123,14 @@ class FollowSuggestionService:
     def __init__(self, repository: FollowGraphRepository | None = None) -> None:
         self._repo = repository or OrmFollowGraphRepository()
 
-    def suggest(self, actor_username: str, target_username: str) -> list[UserSummary]:
+    def suggest(
+        self, actor_username: str, target_username: str, limit: int = 20
+    ) -> list[UserSummary]:
         """Suggest users connected to target that actor does not already follow."""
         actor_key = actor_username.strip().lower()
         target_key = target_username.strip().lower()
-        excluded = {actor_key, target_key, *self._repo.following_usernames(actor_key)}
+        following = {name.strip().lower() for name in self._repo.following_usernames(actor_key)}
+        excluded = {actor_key, target_key, *following}
 
         candidates = [
             *self._repo.following_of(target_key),
@@ -136,11 +139,13 @@ class FollowSuggestionService:
         suggestions: list[UserSummary] = []
         seen: set[str] = set()
         for candidate in candidates:
-            key = candidate.username.lower()
+            key = candidate.username.strip().lower()
             if key in excluded or key in seen:
                 continue
             seen.add(key)
             suggestions.append(candidate)
+            if len(suggestions) >= limit:
+                break
         return suggestions
 
 
@@ -175,17 +180,24 @@ class ProfileService:
     def update_profile(
         self,
         actor: RankitUser,
-        display_name: str,
-        bio: str,
-        icon_id: int,
-        banner_id: int,
+        display_name: str | None = None,
+        bio: str | None = None,
+        icon_id: int | None = None,
+        banner_id: int | None = None,
     ) -> ProfileDetail:
-        """Persist profile customization fields on actor and return updated detail."""
-        actor.display_name = display_name
-        actor.bio = bio
-        actor.icon_id = icon_id
-        actor.banner_id = banner_id
-        actor.save(update_fields=["display_name", "bio", "icon_id", "banner_id", "updated_at"])
+        """Persist provided profile customization fields on actor and return updated detail."""
+        updates: dict[str, str | int | None] = {
+            "display_name": display_name,
+            "bio": bio,
+            "icon_id": icon_id,
+            "banner_id": banner_id,
+        }
+        changed_fields = ["updated_at"]
+        for field, value in updates.items():
+            if value is not None:
+                setattr(actor, field, value)
+                changed_fields.append(field)
+        actor.save(update_fields=changed_fields)
         return self.get_profile(actor.username, actor)
 
 
@@ -219,12 +231,16 @@ class FollowService:
                 f"Relação de follow inexistente de @{actor.username} para @{target.username}."
             )
 
-    def list_followers(self, target_username: str) -> list[UserSummary]:
-        """List followers of target_username after verifying target exists."""
+    def list_followers(
+        self, target_username: str, limit: int = 50, offset: int = 0
+    ) -> list[UserSummary]:
+        """List a bounded slice of followers of target_username after verifying existence."""
         target = _find_user_or_raise(target_username)
-        return self._repo.followers_of(target.username)
+        return self._repo.followers_of(target.username)[offset : offset + limit]
 
-    def list_following(self, target_username: str) -> list[UserSummary]:
-        """List users followed by target_username after verifying target exists."""
+    def list_following(
+        self, target_username: str, limit: int = 50, offset: int = 0
+    ) -> list[UserSummary]:
+        """List a bounded slice of accounts followed by target_username."""
         target = _find_user_or_raise(target_username)
-        return self._repo.following_of(target.username)
+        return self._repo.following_of(target.username)[offset : offset + limit]
