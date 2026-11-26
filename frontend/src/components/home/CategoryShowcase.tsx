@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, Film, Gamepad2, Sparkles, Tv } from "lucide-react";
+import Link from "next/link";
 import GlowHover, { type GlowHoverItem } from "@/components/smoothui/glow-hover-card";
 
 interface MediaCategoryMeta {
@@ -70,18 +71,20 @@ export function CategoryShowcase() {
     id: category.id,
     theme: { hue: category.hue, saturation: 85, lightness: 58 },
     element: (
-      <article className="flex h-full flex-col justify-between rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
-        <div className="flex items-center justify-between">
-          <CategoryIcon id={category.id} />
-          <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-300">
-            {category.provider}
-          </span>
-        </div>
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold text-white">{category.label}</h3>
-          <p className="mt-1 text-sm text-zinc-400">{category.description}</p>
-        </div>
-      </article>
+      <Link className="block h-full" href={`/search?category=${category.id}`}>
+        <article className="flex h-full flex-col justify-between rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
+          <div className="flex items-center justify-between">
+            <CategoryIcon id={category.id} />
+            <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-300">
+              {category.provider}
+            </span>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold text-white">{category.label}</h3>
+            <p className="mt-1 text-sm text-zinc-400">{category.description}</p>
+          </div>
+        </article>
+      </Link>
     ),
   }));
 
