@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ApiClient, ApiClientError, type FetchLike } from "@/lib/api-client";
 
 class FakeJsonFetch {
@@ -75,5 +75,17 @@ describe("ApiClient", () => {
       message:
         "Request to http://localhost:8000/api/v1/health/ failed with HTTP status 500 (expected 2xx JSON response).",
     });
+  });
+
+  it("uses globalThis.fetch when no custom fetcher is injected", async () => {
+    const fake = new FakeJsonFetch(200, { status: "ok" });
+    vi.stubGlobal("fetch", fake.call);
+    try {
+      const client = new ApiClient("http://localhost:8000");
+      const result = await client.get<{ status: string }>("/api/v1/health/");
+      expect(result).toEqual({ status: "ok" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
