@@ -49,9 +49,10 @@ export class ApiClient {
   private readonly baseUrl: string;
   private readonly fetchFn: FetchLike;
 
-  constructor(baseUrl: string = resolveApiBaseUrl(), fetchFn: FetchLike = fetch) {
+  constructor(baseUrl: string = resolveApiBaseUrl(), fetchFn?: FetchLike) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
-    this.fetchFn = fetchFn;
+    // Bind global fetch so browser engines do not throw Illegal invocation on method call.
+    this.fetchFn = fetchFn ?? ((input, init) => globalThis.fetch(input, init));
   }
 
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
