@@ -1,6 +1,7 @@
 """Base Django settings shared across environments."""
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
@@ -29,7 +30,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "rest_framework_simplejwt",
     "apps.core",
+    "apps.accounts",
 ]
 
 MIDDLEWARE = [
@@ -85,6 +88,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+AUTH_USER_MODEL = "accounts.RankitUser"
 
 CORS_ALLOWED_ORIGINS = _split_csv_env(
     "CORS_ALLOWED_ORIGINS",
@@ -92,7 +96,21 @@ CORS_ALLOWED_ORIGINS = _split_csv_env(
 )
 CORS_ALLOW_CREDENTIALS = True
 
+JWT_COOKIE_SECURE = os.getenv("JWT_COOKIE_SECURE", "false").lower() == "true"
+JWT_ACCESS_COOKIE_NAME = "rankit_access"
+JWT_REFRESH_COOKIE_NAME = "rankit_refresh"
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.accounts.authentication.CookieJWTAuthentication",
+    ],
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
