@@ -60,6 +60,7 @@ markers = [
 ]
 
 [tool.coverage.run]
+branch = true
 source = ["apps"]
 omit = ["*/migrations/*", "*/tests/*", "*/__init__.py"]
 

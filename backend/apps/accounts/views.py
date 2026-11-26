@@ -1,5 +1,6 @@
 """HTTP views for cookie-based JWT authentication."""
 
+import contextlib
 import logging
 
 from django.conf import settings
@@ -14,9 +15,17 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .cookies import AuthCookieService
 from .models import RankitUser
+from .security import enforce_cookie_csrf_protection
 from .serializers import AuthenticatedUserSerializer, LoginSerializer, RegisterSerializer
 
 logger = logging.getLogger(__name__)
+
+
+def _active_user_for_refresh(refresh: RefreshToken) -> RankitUser | None:
+    user_id = refresh.get("user_id")
+    if user_id is None:
+        return None
+    return RankitUser.objects.filter(pk=user_id, is_active=True).first()
 
 
 class RegisterView(APIView):
@@ -64,13 +73,14 @@ class LoginView(APIView):
 
 
 class RefreshSessionView(APIView):
-    """Issue a fresh access token cookie using the HttpOnly refresh cookie."""
+    """Rotate refresh cookie and issue a fresh access token cookie."""
 
     authentication_classes = ()
     permission_classes = (AllowAny,)
 
     def post(self, request: Request) -> Response:
-        """Rotate access cookie if the refresh cookie contains a valid JWT."""
+        """Verify CSRF, validate refresh JWT + active user, blacklist old token, and rotate."""
+        enforce_cookie_csrf_protection(request)
         raw_refresh = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
         if not raw_refresh:
             return Response(
@@ -80,6 +90,13 @@ class RefreshSessionView(APIView):
 
         try:
             refresh = RefreshToken(raw_refresh)  # type: ignore[arg-type]
+            user = _active_user_for_refresh(refresh)
+            if user is None:
+                return Response(
+                    {"detail": "Usuário inativo ou inexistente."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            refresh.blacklist()
         except TokenError:
             return Response(
                 {"detail": "Refresh token inválido ou expirado."},
@@ -87,18 +104,24 @@ class RefreshSessionView(APIView):
             )
 
         response = Response({"detail": "Sessão renovada."}, status=status.HTTP_200_OK)
-        AuthCookieService().attach_tokens(response, str(refresh.access_token))
+        AuthCookieService().attach_for_user(response, user)
         return response
 
 
 class LogoutView(APIView):
-    """Clear HttpOnly JWT cookies to end the browser session."""
+    """Revoke refresh token server-side and clear HttpOnly JWT cookies."""
 
     authentication_classes = ()
     permission_classes = (AllowAny,)
 
     def post(self, request: Request) -> Response:
-        """Remove access and refresh cookies and return 204 No Content."""
+        """Verify CSRF, blacklist refresh cookie if valid, and delete auth cookies."""
+        enforce_cookie_csrf_protection(request)
+        raw_refresh = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
+        if raw_refresh:
+            with contextlib.suppress(TokenError):
+                RefreshToken(raw_refresh).blacklist()  # type: ignore[arg-type]
+
         response = Response(status=status.HTTP_204_NO_CONTENT)
         AuthCookieService().clear_tokens(response)
         return response

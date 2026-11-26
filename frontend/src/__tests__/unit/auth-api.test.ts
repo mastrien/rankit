@@ -74,8 +74,8 @@ describe("auth-api", () => {
     const client = new ApiClient("http://localhost:8000", badFetch.call);
 
     await expect(fetchCurrentUser(client)).rejects.toThrow(/Invalid AuthUser payload/);
-    await expect(fetchCurrentUser(new ApiClient("http://localhost:8000", new FakeAuthFetch(200, null).call))).rejects.toThrow(
-      /Invalid AuthUser payload/,
-    );
+    await expect(
+      fetchCurrentUser(new ApiClient("http://localhost:8000", new FakeAuthFetch(200, null).call)),
+    ).rejects.toThrow(/Invalid AuthUser payload/);
   });
 });

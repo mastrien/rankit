@@ -26,7 +26,9 @@ const DEFAULT_PUBLIC_API_URL = "http://localhost:8000";
 /** Resolve the base backend URL depending on browser vs server runtime. */
 export function resolveApiBaseUrl(): string {
   if (typeof window === "undefined") {
-    return process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_PUBLIC_API_URL;
+    return (
+      process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_PUBLIC_API_URL
+    );
   }
   return process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_PUBLIC_API_URL;
 }
@@ -58,6 +60,12 @@ export class ApiClient {
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
     const headers = new Headers(init.headers);
+    const method = (init.method ?? "GET").toUpperCase();
+    if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+      if (!headers.has("X-Requested-With")) {
+        headers.set("X-Requested-With", "XMLHttpRequest");
+      }
+    }
     if (init.body && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
