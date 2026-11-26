@@ -26,7 +26,9 @@ const DEFAULT_PUBLIC_API_URL = "http://localhost:8000";
 /** Resolve the base backend URL depending on browser vs server runtime. */
 export function resolveApiBaseUrl(): string {
   if (typeof window === "undefined") {
-    return process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_PUBLIC_API_URL;
+    return (
+      process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_PUBLIC_API_URL
+    );
   }
   return process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_PUBLIC_API_URL;
 }
